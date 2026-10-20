@@ -1,37 +1,29 @@
 # Wallet Operations Dashboard
 
-**Local account groups, read-only inspection and explicit transaction planning.**
-
 ![Language: TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript) ![API: Fastify](https://img.shields.io/badge/API-Fastify-555555?style=flat-square) [![License: MIT](https://img.shields.io/badge/License-MIT-555555?style=flat-square)](LICENSE)
 
-[Overview](#overview) · [Quickstart](#quickstart) · [Example](#example) · [Validation](#validation) · [Documentation](#documentation)
+A local BNB Chain dashboard for wallet groups, account inspection, launch drafts and transaction planning.
 
-## Overview
+React presents the account/group workflow; Fastify owns API operations; SQLite stores local state. The execution planner prepares per-wallet approval/trade requirements and gas/balance estimates without treating a draft as a signed transaction.
 
-A local BNB Chain wallet dashboard for grouped accounts, read-only inspection and dry-run execution planning.
+## What a plan contains
 
-**Stack:** TypeScript · React · Fastify · ethers · SQLite · Vite · Vitest
+[fourMemeExecutionPlanner.ts](src/server/fourMemeExecutionPlanner.ts) produces rows with nonce allocation, approval calldata, trade dry-run details, gas requirements and wallet balances. Row status distinguishes `ready_dry_run`, `insufficient_bnb`, `simulation_error` and `gas_unknown`.
 
-## Separate inspection from transaction intent
+Its plan contract explicitly includes:
 
-| Component | Behavior |
-| --- | --- |
-| Organize | Wallet/group records organize local accounts. |
-| Inspect | Market and transaction readers enrich account views. |
-| Plan | Launch/transaction drafts and dry runs retain intended operations separately. |
-
-## Processing path
-
-```mermaid
-flowchart LR
-  N0["React interface"]
-  N1["Fastify API"]
-  N2["local wallet/planning store"]
-  N3["read-only RPC readers and draft plans"]
-N0 --> N1 --> N2 --> N3
+```typescript
+readOnly: true
+broadcast: false
+blockedForBroadcast: true
+blockReason: 'explicit_real_mode_not_enabled'
 ```
 
-## Quickstart
+This is a contract excerpt, not an API response from a live wallet. Other server modules still need their own operational review; the planner's flags should not be generalized to every account action.
+
+## Build and test the local application
+
+Requires Node.js 24+:
 
 ```console
 npm ci --ignore-scripts
@@ -39,39 +31,18 @@ npm test
 npm run build
 ```
 
-The commands above install prerequisites or run the specified offline checks. Live collection, cloud operations, messaging and trading are separate operational steps when present.
+The [test directory](test) includes wallet/group, transaction-parser, plan-storage and no-broadcast regressions. These are declared checks; this documentation does not claim a newly validated end-to-end wallet session.
 
-## Example
+## Read the boundaries before adding accounts
 
-**Inspect the workflow**
+- [src/client/main.tsx](src/client/main.tsx): interface and account workflows.
+- [src/server/app.ts](src/server/app.ts): API boundary.
+- [src/server/db.ts](src/server/db.ts): local database.
+- [src/server/executionPlanStore.ts](src/server/executionPlanStore.ts): persisted plans.
+- [src/server/txParser.ts](src/server/txParser.ts): transaction interpretation.
 
-Inspect the React/Fastify boundary, local group records and planning views before supplying any account material. Use synthetic accounts when examining drafts and dry runs. A stored plan is an intent record, not a signed or settled transaction.
+The original design stores private keys in SQLite without a vault/unlock layer. Use synthetic data for source inspection; this snapshot is not a production custody solution. Local databases, imported account material and real keys must stay outside the repository. No wallet was connected, signed or broadcast for this documentation.
 
-## Configuration and storage
+**Technology:** TypeScript · React · Fastify · ethers · SQLite · Vite · Vitest
 
-Node.js 24+ is used by the existing project guide. TypeScript, React, Fastify, ethers and SQLite implement the UI/API/state boundary. The local development scripts start API and Vite separately or together.
-
-## Repository guide
-
-| Location | Responsibility |
-| --- | --- |
-| [src/client/main.tsx](src/client/main.tsx) | React interface |
-| [src/server/app.ts](src/server/app.ts) | Fastify API |
-| [src/server/db.ts](src/server/db.ts) | SQLite state |
-| [src/server/balances.ts](src/server/balances.ts) | Balance readers |
-
-## Validation
-
-The quickstart lists the declared checks. No passing CI or coverage claim is implied by the technology badges.
-
-## Scope and operational boundaries
-
-The original local design stores private keys in SQLite without a vault/unlock layer. This is not a production custody solution; use synthetic data for inspection. Session/database material and real keys are excluded from distribution.
-
-## Documentation
-
-- The repository guide above links directly to the implementation and configuration files.
-
-## License and attribution
-
-Project-authored source code is licensed under the [MIT License](LICENSE). Third-party components and datasets retain their respective rights and licenses.
+Project-authored source: [MIT](LICENSE). Third-party components retain their own notices and terms.
